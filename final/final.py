@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-import json
+import sys,json,re
+sys.path.append("../../../NTNU_TextProcessing_2020/week09/deadline/")
+from ArticutAPI import ArticutAPI
 def txtReader(File):
     with open(File,encoding='utf-8') as f:
         result=f.read()
@@ -15,19 +17,39 @@ def repl(target,replaceLIST,replacements):
         elif target[i] in replaceLIST:
             n=replaceLIST.index(target[i])
             target=target.replace(target[i],replacements[n])
-            i+=2
+            i+=len(target)
+    return target
+
+def cut(target):
+    articut=ArticutAPI.Articut()
+    result=""
+    for i in range(0, len(target), 2000):
+        resultDICT=articut.parse(target[i:i+2000])
+        result=result + resultDICT["result_segmentation"]
+    return result
+    
+def addnote(target,con):
+    for i in range(len(target)):
+        if target[i] in con:
+            # n=con.index(target[i])
+            target.insert(i+1,'*')
+            i=i+1
     return target
 
 if __name__ == "__main__":
+    articut=ArticutAPI.Articut()
     txt = txtReader('../民法.txt')
-    txt=txt.replace('\n','')
+    # txt=txt.replace('\n','')
     # 先將文本中的換行去掉，因為法律條文並沒有用自動排版，而是手動換行
     replaceLIST=jsonReader('./replace.json')["Replace"]
     replacementsLIST=jsonReader('./replace.json')["replacements"]
-    txt=repl(txt,replaceLIST,replacementsLIST)
-    
-    # json=jsonReader('./replace.json')["replace"].replace_in_list(jsonReader('./replace.json')["replace"],jsonReader('./replace.json')["replacements"])
-    # txtRaplace=txt.replace(txt, json["replacements"])
-    #這邊是想要將DICT中的詞替換掉，不過還沒找到方法，上面是失敗的例子XD
-
-    print(txt)
+    replaceNoun=jsonReader('./replace.json')["replaceNoun"]
+    inputSTR=repl(txt,replaceLIST,replacementsLIST)
+    result=cut(inputSTR)
+    # result=articut.parse(inputSTR, level="lv1")
+    # nounStemLIST = articut.getNounStemLIST(result)
+    ReResulLIST=re.findall(r"(?<=\/).+?(?=\/)",result)
+    noteResult=addnote(ReResulLIST,replaceNoun)
+    resultSTR="".join(noteResult)
+    print(resultSTR)
+    # print(txt)
