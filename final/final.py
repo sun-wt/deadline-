@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import sys,json,re
+import sys,json,re,docx
 sys.path.append("../../../NTNU_TextProcessing_2020/week09/deadline/")
 from ArticutAPI import ArticutAPI
 def txtReader(File):
@@ -31,25 +31,52 @@ def cut(target):
 def addnote(target,con):
     for i in range(len(target)):
         if target[i] in con:
-            # n=con.index(target[i])
-            target.insert(i+1,'*')
+            n=con.index(target[i])
+            target.insert(i+1,'[')
+            target.insert(i+2,str(n))
+            target.insert(i+3,']')
             i=i+1
+        if target[i]=='第':
+            target.insert(i+4,'\n')
     return target
+def jsonWriter(target,FileName):
+    with open(FileName,"w",encoding="utf-8") as f:
+        json.dump(target, f , ensure_ascii=False)
+        f.write("\n")
+    return None
+
+def splitparagraph(target):
+    for i in range(len(target)):
+        if target[i]=='第' and target[i-1]=='。':
+            target=target.replace(target[i-1],'\n')
+    return target
+
+def note(target):
+    resultSTR=""
+    for i in range(len(target)):
+        resultSTR=resultSTR+"註"+'['+str(i)+']'+target[i]+'\n'
+    return resultSTR
 
 if __name__ == "__main__":
     articut=ArticutAPI.Articut()
+    doc = docx.Document()
     txt = txtReader('../民法.txt')
-    # txt=txt.replace('\n','')
+    txt=txt.replace('\n','')
     # 先將文本中的換行去掉，因為法律條文並沒有用自動排版，而是手動換行
     replaceLIST=jsonReader('./replace.json')["Replace"]
     replacementsLIST=jsonReader('./replace.json')["replacements"]
     replaceNoun=jsonReader('./replace.json')["replaceNoun"]
+    meanLIST=jsonReader('./replace.json')["NounMean"]
     inputSTR=repl(txt,replaceLIST,replacementsLIST)
     result=cut(inputSTR)
-    # result=articut.parse(inputSTR, level="lv1")
-    # nounStemLIST = articut.getNounStemLIST(result)
     ReResulLIST=re.findall(r"(?<=\/).+?(?=\/)",result)
     noteResult=addnote(ReResulLIST,replaceNoun)
     resultSTR="".join(noteResult)
+    resultSTR=splitparagraph(resultSTR)
+    resultSTR=resultSTR+note(meanLIST)
+    doc.add_paragraph(resultSTR)
+    doc.save('民法(更).docx')
+    # for paragraph in doc.paragraphs:
+        # if paragraph.text.startswith('第'):
+            # print(paragraph.text)
     print(resultSTR)
-    # print(txt)
