@@ -54,7 +54,7 @@ def splitparagraph(target):
 def note(target):
     resultSTR=""
     for i in range(len(target)):
-        resultSTR=resultSTR+"註"+'['+str(i)+']'+target[i]+'\n'
+        resultSTR=resultSTR+'\n'+"註"+'['+str(i)+']'+target[i]
     return resultSTR
 
 if __name__ == "__main__":
